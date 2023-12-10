@@ -37,6 +37,7 @@
 #include <utility>
 #include <vector>
 
+#include "bulkload/bulkloader.h"
 #include "cluster/cluster.h"
 #include "cluster/replication.h"
 #include "cluster/slot_import.h"

@@ -502,4 +502,17 @@ rocksdb::Status String::CAD(const std::string &user_key, const std::string &valu
   return rocksdb::Status::OK();
 }
 
+std::pair<std::string, std::string> String::EncodeToStr(const std::string &key, const std::string &value, uint64_t ttl) {
+  std::string raw_value;
+  Metadata metadata(kRedisString, false);
+  if (ttl > 0) {
+    uint64_t now = util::GetTimeStampMS();
+    metadata.expire = now + ttl;
+  }
+  metadata.Encode(&raw_value);
+  raw_value.append(value);
+  std::string ns_key = AppendNamespacePrefix(key);
+  return std::make_pair(ns_key, raw_value);
+}
+
 }  // namespace redis

@@ -55,6 +55,7 @@ class String : public Database {
   rocksdb::Status CAS(const std::string &user_key, const std::string &old_value, const std::string &new_value,
                       uint64_t ttl, int *flag);
   rocksdb::Status CAD(const std::string &user_key, const std::string &value, int *flag);
+  std::pair<std::string, std::string> EncodeToStr(const std::string &key, const std::string &value, uint64_t ttl);
 
  private:
   rocksdb::Status getValue(const std::string &ns_key, std::string *value);
