@@ -199,9 +199,9 @@ class Storage {
   Status ShiftReplId();
   std::string GetReplIdFromWalBySeq(rocksdb::SequenceNumber seq);
   std::string GetReplIdFromDbEngine();
+  std::unique_ptr<rocksdb::DB> db_ = nullptr;
 
  private:
-  std::unique_ptr<rocksdb::DB> db_ = nullptr;
   std::string replid_;
   time_t backup_creating_time_;
   std::unique_ptr<rocksdb::BackupEngine> backup_ = nullptr;
