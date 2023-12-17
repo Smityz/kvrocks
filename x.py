@@ -59,6 +59,7 @@ def run(*args: str, msg: Optional[str] = None, verbose: bool = False, **kwargs: 
     if verbose:
         print(f"$ {' '.join(args)}")
 
+    print(f"running: {' '.join(args)}")
     p = Popen(args, **kwargs)
     code = p.wait()
     if code != 0:
