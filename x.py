@@ -24,6 +24,7 @@ from pathlib import Path
 import re
 from subprocess import Popen, PIPE
 import sys
+import time
 from typing import List, Any, Optional, TextIO, Tuple
 from shutil import which
 
@@ -135,7 +136,10 @@ def build(dir: str, jobs: Optional[int], ghproxy: bool, ninja: bool, unittest: b
         options.append(f"-j{jobs}")
     options += ["-t", *target]
 
+    start_time = time.time()
     run(cmake, *options, verbose=True, cwd=dir)
+    print(f"build time: {time.strftime('%Mm%Ss', time.gmtime(time.time() - start_time))}")
+
 
 
 def get_source_files(dir: Path) -> List[str]:
