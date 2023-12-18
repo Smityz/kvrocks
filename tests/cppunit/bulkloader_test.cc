@@ -24,7 +24,7 @@ TEST_F(BulkloaderTest, addString) {
   std::string one_kb_value(1024, 'a');
 
   auto start = std::chrono::steady_clock::now();
-  for (int i = 0; i < 100000; i++) {
+  for (int i = 0; i < 1000000; i++) {
     loader_->AddString(key + std::to_string(i), std::to_string(i) + one_kb_value, ttl);
   }
   auto add_time = std::chrono::steady_clock::now() - start;

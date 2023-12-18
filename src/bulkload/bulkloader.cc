@@ -1,14 +1,23 @@
 #include "bulkloader.h"
 
+#include "rocksdb/sst_file_reader.h"
+
 namespace redis {
 
 Bulkloader::Bulkloader(engine::Storage* storage, std::string ns)
     : storage_(storage),
       ns_(std::move(ns)),
-      // writer_(rocksdb::EnvOptions(), rocksdb::Options(), storage_->GetCFHandle("metadata"), rocksdb::Env::Default()),
-      writer_(rocksdb::EnvOptions(), rocksdb::Options()),
+      writer_(rocksdb::EnvOptions(), rocksdb::Options(), storage_->GetCFHandle("metadata"), rocksdb::Env::Default()),
       encoder_(storage_, ns_) {
   dir_ = "/tmp/kvrocks/test.sst";
+  auto cf = storage_->GetCFHandle("metadata");
+  std::cout << "Yes" << std::endl;
+  if (cf == nullptr) {
+    std::cout << "cf is null" << std::endl;
+  } else {
+    std::cout << cf->GetName() << std::endl;
+    std::cout << cf->GetID() << std::endl;
+  }
 };
 
 void Bulkloader::AddString(std::string&& key, std::string&& value, const u_int64_t ttl) {
@@ -41,6 +50,14 @@ bool Bulkloader::Ingest() {
   auto write_time = std::chrono::steady_clock::now() - start;
   std::cout << "write time: " << std::chrono::duration_cast<std::chrono::milliseconds>(write_time).count() << "ms"
             << std::endl;
+
+  for (auto& i : v) {
+    storage_->db_->Put(rocksdb::WriteOptions(), storage_->GetCFHandle("metadata"), i.first, i.second);
+  }
+  auto write_db_time = std::chrono::steady_clock::now() - start;
+  std::cout << "write db time: " << std::chrono::duration_cast<std::chrono::milliseconds>(write_db_time).count() << "ms"
+            << std::endl;
+
   rocksdb::ExternalSstFileInfo info;
   writer_.Finish(&info);
   auto finish_time = std::chrono::steady_clock::now() - start;
@@ -60,9 +77,24 @@ bool Bulkloader::Ingest() {
     std::cout << "Failed to list column families: " << s.ToString() << std::endl;
   }
 
+  // Open the SST file
+  rocksdb::SstFileReader sst_file_reader{rocksdb::Options()};
+  s = sst_file_reader.Open(dir_);
+
+  std::cout << "Open SST file: " << s.ToString() << std::endl;
+  if (s.ok()) {
+    auto p = sst_file_reader.GetTableProperties();
+    std::cout << p->column_family_id << std::endl;
+    std::cout << p->data_size << std::endl;
+    std::cout << p->column_family_name << std::endl;
+  } else {
+    std::cout << "Failed to open SST file: " << s.ToString() << std::endl;
+  }
+
   rocksdb::IngestExternalFileOptions ifo;
-  ifo.move_files = true;
-  auto res = storage_->db_->IngestExternalFile({info.file_path}, ifo);
+  // ifo.move_files = true;
+  storage_->db_->DisableFileDeletions();
+  auto res = storage_->db_->IngestExternalFile(storage_->GetCFHandle("metadata"), {info.file_path}, ifo);
   std::cout << res.ToString() << std::endl;
   auto ingest_time = std::chrono::steady_clock::now() - start;
   std::cout << "ingest time: " << std::chrono::duration_cast<std::chrono::milliseconds>(ingest_time).count() << "ms"
